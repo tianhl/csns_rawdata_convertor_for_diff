@@ -1,0 +1,1 @@
+samplefile  = /home/tianhl/workarea/Codes/csns_rawdata_convertor_for_diff/test/data_0902/sample_left.dat
