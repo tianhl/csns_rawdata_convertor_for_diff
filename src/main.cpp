@@ -16,7 +16,7 @@ using namespace std;
 
 //const uint32_t MAX_TOF =4000;
 //const uint32_t MAX_DET =1080;
-const uint32_t MAX_TOF =3000;
+const uint32_t MAX_TOF =4000;
 const uint32_t MAX_DET =1080;
 typedef  map<uint32_t, vector<uint32_t> > TofDetMap; 
 typedef  vector<uint32_t> TofVector; 
@@ -71,17 +71,20 @@ void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector)
 	for(uint32_t tofidx = 0; tofidx < MAX_TOF; tofidx++){
                 if(tofdetmap[tofidx].size() > 0) tofvector.push_back(tofidx);
 	}
+  
+	std::cout << "create tofvector " << tofvector.size() << std::endl;
 
 
 }
 
 void ReadOut(uint32_t tofidx, uint32_t detidx){
 	uint32_t tof = 8000+tofidx*8;
+        //detidx;
         //std::cout << "TOF: " << tof << "; DET IDX: " << detidx << std::endl; 
 }
 
 void RandomHit(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector){
-	uint32_t tofidx = tofvector.at(uint32_t(rand()%(tofdetmap.size())));
+	uint32_t tofidx = tofvector.at(uint32_t(rand()%(tofvector.size())));
 	uint32_t detidx = tofdetmap[tofidx].at((rand()%(tofdetmap[tofidx].size())));
 	//std::cout << "TOF IDX: " << tofidx << std::endl;
 	//std::cout << "DET IDX: " << detidx << std::endl;
@@ -98,7 +101,7 @@ void RandomHit(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector){
 		if(tofdetmap[tofidx].size()==0){
 			tofdetmap.erase(tofidx);
                         tofvector.erase(std::find(tofvector.begin(), tofvector.end(), tofidx));
-                        std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofdetmap.size() << std::endl;
+                        std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofvector.size() << std::endl;
 		}
 	}
 }
@@ -111,8 +114,11 @@ int main(int argc, char *argv[]) {
 	std::string configfile(argv[1]);
 	Config* fConfig = new Config(configfile);
 	std::string samplefile  ; 
+	std::string mappingfile  ; 
 	samplefile  = fConfig->pString("samplefile") ;  
-	std::cout << "read sample file: " << samplefile << std::endl;
+	//samplefile  = fConfig->pString("mappingfile") ;  
+	std::cout << "read sample file:  " << samplefile << std::endl;
+	//std::cout << "read mapping file: " << mappingfile << std::endl;
 
 	uint32_t *cmap = new uint32_t[MAX_TOF*MAX_DET];
 	LoadSimulationFile(cmap, samplefile); 
@@ -126,8 +132,9 @@ int main(int argc, char *argv[]) {
 	while(1){
 		RandomHit(cmap, *tofdetmap, *tofvector);
                 counts++;
-                if((counts%100000000)==0)std::cout<< "Read Out Counts: " << counts << std::endl;
-                if (tofdetmap->size() == 0)break;
+                //if((counts%100000000)==0)
+                //std::cout<< "Read Out Counts: " << counts << std::endl;
+                if (tofvector->size() == 0)break;
 	}
 
 	std::cout << "Total Events: " << counts << std::endl;
