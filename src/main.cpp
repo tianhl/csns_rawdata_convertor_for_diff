@@ -17,7 +17,7 @@ using namespace std;
 //const uint32_t MAX_TOF =4000;
 //const uint32_t MAX_DET =1080;
 const uint32_t MAX_TOF =4000;
-const uint32_t MAX_DET =1080;
+const uint32_t MAX_DET =61440;
 typedef  map<uint32_t, vector<uint32_t> > TofDetMap; 
 typedef  vector<uint32_t> TofVector; 
 
@@ -116,9 +116,9 @@ int main(int argc, char *argv[]) {
 	std::string samplefile  ; 
 	std::string mappingfile  ; 
 	samplefile  = fConfig->pString("samplefile") ;  
-	//samplefile  = fConfig->pString("mappingfile") ;  
+	samplefile  = fConfig->pString("mappingfile") ;  
 	std::cout << "read sample file:  " << samplefile << std::endl;
-	//std::cout << "read mapping file: " << mappingfile << std::endl;
+	std::cout << "read mapping file: " << mappingfile << std::endl;
 
 	uint32_t *cmap = new uint32_t[MAX_TOF*MAX_DET];
 	LoadSimulationFile(cmap, samplefile); 
@@ -128,14 +128,21 @@ int main(int argc, char *argv[]) {
 	CreateTofDetMap(cmap, *tofdetmap, *tofvector);
 
 	srand(time(NULL));
-        uint64_t counts=0;
+        uint64_t hitcounts=0;
+        uint64_t pulsecounts=0;
 	while(1){
-		RandomHit(cmap, *tofdetmap, *tofvector);
-                counts++;
-                //if((counts%100000000)==0)
-                //std::cout<< "Read Out Counts: " << counts << std::endl;
-                if (tofvector->size() == 0)break;
+		int hitsinpulse = rand()%20 + 10;
+		for(int i=0; i< hitsinpulse; i++){
+			RandomHit(cmap, *tofdetmap, *tofvector);
+			hitcounts++;
+			//if((counts%100000000)==0)
+			//std::cout<< "Read Out Counts: " << counts << std::endl;
+			if (tofvector->size() == 0)break;
+		}
+                pulsecounts++;
+		if (tofvector->size() == 0)break;
 	}
 
-	std::cout << "Total Events: " << counts << std::endl;
+	std::cout << "Total Events: " << hitcounts << std::endl;
+	std::cout << "Total Pulse: "  << pulsecounts << std::endl;
 }
