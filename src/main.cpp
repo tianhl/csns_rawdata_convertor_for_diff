@@ -81,8 +81,8 @@ void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector)
 void ReadOut(DetMapping& detmapping, uint32_t tofidx, uint32_t detidx){
 	uint32_t tof = 8000+tofidx*8;
         vector<uint32_t> evt = detmapping[detidx];
-	//std::cout << "TOF: " << tof << " detidx " << detidx  << " bank " << evt[0] 
-	//	<< " moduleid " << evt[1] << " xid " << evt[2] << " yid " << evt[3] << std::endl;
+	std::cout << "TOF: " << tof << " detidx " << detidx  << " bank " << evt[0] 
+		<< " moduleid " << evt[1] << " xid " << evt[2] << " yid " << evt[3] << std::endl;
 }
 
 void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, TofVector& tofvector){
@@ -168,6 +168,7 @@ int main(int argc, char *argv[]) {
 			if (tofvector->size() == 0)break;
 		}
 		pulsecounts++;
+	        std::cout << "Pulse: " << pulsecounts  << std::endl;
 		if (tofvector->size() == 0)break;
 	}
 
