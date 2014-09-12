@@ -21,10 +21,10 @@ const uint32_t MAX_DET =61440;
 
 typedef  map<uint32_t, vector<uint32_t> > TofDetMap; 
 typedef  map<uint32_t, vector<uint32_t> > DetMapping; 
-//typedef  vector<uint32_t> TofVector; 
 
 typedef vector<uint32_t> EvtLocation;
 typedef multimap<uint32_t, EvtLocation> EvtInfo;
+typedef map<uint64_t, EvtInfo> PulseInfo;
 
 uint32_t MapIdx(uint32_t tofidx, uint32_t detidx){
 	return tofidx*MAX_DET+detidx;
@@ -61,7 +61,6 @@ void LoadSimulationFile(uint32_t* cmap, std::string samplefilename){
 	samplefile.close();
 }
 
-//void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector){
 void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap){
 	int tofidx = 0;
 
@@ -75,17 +74,12 @@ void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap){
 	}
 
 
-	//for(uint32_t tofidx = 0; tofidx < MAX_TOF; tofidx++){
-        //        if(tofdetmap[tofidx].size() > 0) tofvector.push_back(tofidx);
-	//}
-  
-	//std::cout << "create tofvector " << tofvector.size() << std::endl;
 	std::cout << "create tofvector " << tofdetmap.size() << std::endl;
 
 
 }
 
-void ReadOut(DetMapping& detmapping, uint32_t tofidx, uint32_t detidx, EvtInfo& evtinfo){
+void AddEvt(DetMapping& detmapping, uint32_t tofidx, uint32_t detidx, EvtInfo& evtinfo){
 	uint32_t tof = 8000+tofidx*8;
         EvtLocation evtlocation = detmapping[detidx];
 	//std::cout << "TOF: " << tof << " detidx " << detidx  << " bank " << evtlocation[0] 
@@ -93,23 +87,20 @@ void ReadOut(DetMapping& detmapping, uint32_t tofidx, uint32_t detidx, EvtInfo& 
         evtinfo.insert(make_pair(tof, evtlocation));
 }
 
-//void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, TofVector& tofvector, EvtInfo& evtinfo){
 void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, EvtInfo& evtinfo){
-	//uint32_t tofidx = tofvector.at(uint32_t(rand()%(tofvector.size())));
 	
 	TofDetMap::iterator it=tofdetmap.begin();
 	uint32_t offset = uint32_t(rand()%tofdetmap.size());
+
 	for(int i = 0; i < offset; i++)it++;
 	uint32_t tofidx = (*it).first;
 	uint32_t detidx = tofdetmap[tofidx].at((rand()%(tofdetmap[tofidx].size())));
-	ReadOut(detmapping, tofidx, detidx, evtinfo);
+	AddEvt(detmapping, tofidx, detidx, evtinfo);
 	cmap[MapIdx(tofidx, detidx)]--;
 	if(cmap[MapIdx(tofidx, detidx)]==0){
 		tofdetmap[tofidx].erase(std::find(tofdetmap[tofidx].begin(), tofdetmap[tofidx].end(), detidx));
 		if(tofdetmap[tofidx].size()==0){
 			tofdetmap.erase(tofidx);
-			//tofvector.erase(std::find(tofvector.begin(), tofvector.end(), tofidx));
-			//std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofvector.size() << std::endl;
 			std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofdetmap.size() << std::endl;
 		}
 	}
@@ -157,6 +148,12 @@ void PrintEvtInfo(EvtInfo& evtinfo){
 	}
 }
 
+void PrintPulseInfo(PulseInfo& pulseinfo){
+	PulseInfo::iterator it = pulseinfo.begin();
+	std::cout << "Pulse ID: " << (*it).first << std::endl;
+	PrintEvtInfo((*it).second);
+}
+
 int main(int argc, char *argv[]) {
 	if (argc != 2){
 		std::cout << "Usage: " << argv[0] << " option.txt" << std::endl;
@@ -178,28 +175,26 @@ int main(int argc, char *argv[]) {
 	LoadSimulationFile(cmap, samplefile); 
 
 	TofDetMap* tofdetmap = new TofDetMap;
-	//TofVector* tofvector = new TofVector;
-	//CreateTofDetMap(cmap, *tofdetmap, *tofvector);
 	CreateTofDetMap(cmap, *tofdetmap);
 
 	srand(time(NULL));
 	uint64_t hitcounts=0;
 	uint64_t pulsecounts=0;
 	EvtInfo* evtinfo = new EvtInfo;
+	PulseInfo* pulseinfo = new PulseInfo;
 	while(1){
 		int hitsinpulse = rand()%20 + 10;
 		evtinfo->clear();
-		std::cout << "Pulse: " << pulsecounts  << std::endl;
+		pulseinfo->clear();
 		for(int i=0; i< hitsinpulse; i++){
-			//RandomHit(cmap, *detmapping, *tofdetmap, *tofvector, *evtinfo);
 			RandomHit(cmap, *detmapping, *tofdetmap, *evtinfo);
 			hitcounts++;
-			//if (tofvector->size() == 0)break;
 			if (tofdetmap->size() == 0)break;
 		}
-		PrintEvtInfo(*evtinfo);
+		pulseinfo->insert(make_pair(pulsecounts, *evtinfo));
+
+		PrintPulseInfo(*pulseinfo);
 		pulsecounts++;
-		//if (tofvector->size() == 0)break;
 		if (tofdetmap->size() == 0)break;
 	}
 
