@@ -18,9 +18,13 @@ using namespace std;
 //const uint32_t MAX_DET =1080;
 const uint32_t MAX_TOF =4000;
 const uint32_t MAX_DET =61440;
+
 typedef  map<uint32_t, vector<uint32_t> > TofDetMap; 
 typedef  map<uint32_t, vector<uint32_t> > DetMapping; 
 typedef  vector<uint32_t> TofVector; 
+
+typedef vector<uint32_t> EvtLocation;
+typedef multimap<uint32_t, EvtLocation> EvtInfo;
 
 uint32_t MapIdx(uint32_t tofidx, uint32_t detidx){
 	return tofidx*MAX_DET+detidx;
@@ -78,17 +82,18 @@ void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector)
 
 }
 
-void ReadOut(DetMapping& detmapping, uint32_t tofidx, uint32_t detidx){
+void ReadOut(DetMapping& detmapping, uint32_t tofidx, uint32_t detidx, EvtInfo& evtinfo){
 	uint32_t tof = 8000+tofidx*8;
-        vector<uint32_t> evt = detmapping[detidx];
-	std::cout << "TOF: " << tof << " detidx " << detidx  << " bank " << evt[0] 
-		<< " moduleid " << evt[1] << " xid " << evt[2] << " yid " << evt[3] << std::endl;
+        EvtLocation evtlocation = detmapping[detidx];
+	//std::cout << "TOF: " << tof << " detidx " << detidx  << " bank " << evtlocation[0] 
+	//	<< " moduleid " << evtlocation[1] << " xid " << evtlocation[2] << " yid " << evtlocation[3] << std::endl;
+        evtinfo.insert(make_pair(tof, evtlocation));
 }
 
-void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, TofVector& tofvector){
+void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, TofVector& tofvector, EvtInfo& evtinfo){
 	uint32_t tofidx = tofvector.at(uint32_t(rand()%(tofvector.size())));
 	uint32_t detidx = tofdetmap[tofidx].at((rand()%(tofdetmap[tofidx].size())));
-	ReadOut(detmapping, tofidx, detidx);
+	ReadOut(detmapping, tofidx, detidx, evtinfo);
 	cmap[MapIdx(tofidx, detidx)]--;
 	if(cmap[MapIdx(tofidx, detidx)]==0){
 		tofdetmap[tofidx].erase(std::find(tofdetmap[tofidx].begin(), tofdetmap[tofidx].end(), detidx));
@@ -133,6 +138,15 @@ void LoadMappingFile(DetMapping& detmapping, std::string mappingfilename){
 
 }
 
+void PrintEvtInfo(EvtInfo& evtinfo){
+ multimap<uint32_t, EvtLocation>::iterator it;
+for(it=evtinfo.begin(); it!=evtinfo.end();++it){
+EvtLocation evtlocation = (*it).second;
+cout << " Tof: " << (*it).first << " Bank: " << evtlocation[0] << " Module: " << evtlocation[1]
+<< " Xid: " << evtlocation[2] << " Yid: " << evtlocation[3] << endl;
+}
+}
+
 int main(int argc, char *argv[]) {
 	if (argc != 2){
 		std::cout << "Usage: " << argv[0] << " option.txt" << std::endl;
@@ -160,15 +174,18 @@ int main(int argc, char *argv[]) {
 	srand(time(NULL));
 	uint64_t hitcounts=0;
 	uint64_t pulsecounts=0;
+        EvtInfo* evtinfo = new EvtInfo;
 	while(1){
 		int hitsinpulse = rand()%20 + 10;
+                evtinfo->clear();
+	        std::cout << "Pulse: " << pulsecounts  << std::endl;
 		for(int i=0; i< hitsinpulse; i++){
-			RandomHit(cmap, *detmapping, *tofdetmap, *tofvector);
+			RandomHit(cmap, *detmapping, *tofdetmap, *tofvector, *evtinfo);
 			hitcounts++;
 			if (tofvector->size() == 0)break;
 		}
+                PrintEvtInfo(*evtinfo);
 		pulsecounts++;
-	        std::cout << "Pulse: " << pulsecounts  << std::endl;
 		if (tofvector->size() == 0)break;
 	}
 
