@@ -21,7 +21,7 @@ const uint32_t MAX_DET =61440;
 
 typedef  map<uint32_t, vector<uint32_t> > TofDetMap; 
 typedef  map<uint32_t, vector<uint32_t> > DetMapping; 
-typedef  vector<uint32_t> TofVector; 
+//typedef  vector<uint32_t> TofVector; 
 
 typedef vector<uint32_t> EvtLocation;
 typedef multimap<uint32_t, EvtLocation> EvtInfo;
@@ -61,7 +61,8 @@ void LoadSimulationFile(uint32_t* cmap, std::string samplefilename){
 	samplefile.close();
 }
 
-void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector){
+//void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector){
+void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap){
 	int tofidx = 0;
 
 
@@ -70,14 +71,16 @@ void CreateTofDetMap(uint32_t* cmap, TofDetMap& tofdetmap, TofVector& tofvector)
 		for(uint32_t detidx=0; detidx < MAX_DET; detidx++){
 			if( cmap[MapIdx(tofidx, detidx)] > 0)tofdetmap[tofidx].push_back(detidx);
 		}
+		if(tofdetmap[tofidx].size()==0)tofdetmap.erase(tofdetmap.find(tofidx));
 	}
 
 
-	for(uint32_t tofidx = 0; tofidx < MAX_TOF; tofidx++){
-                if(tofdetmap[tofidx].size() > 0) tofvector.push_back(tofidx);
-	}
+	//for(uint32_t tofidx = 0; tofidx < MAX_TOF; tofidx++){
+        //        if(tofdetmap[tofidx].size() > 0) tofvector.push_back(tofidx);
+	//}
   
-	std::cout << "create tofvector " << tofvector.size() << std::endl;
+	//std::cout << "create tofvector " << tofvector.size() << std::endl;
+	std::cout << "create tofvector " << tofdetmap.size() << std::endl;
 
 
 }
@@ -90,8 +93,14 @@ void ReadOut(DetMapping& detmapping, uint32_t tofidx, uint32_t detidx, EvtInfo& 
         evtinfo.insert(make_pair(tof, evtlocation));
 }
 
-void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, TofVector& tofvector, EvtInfo& evtinfo){
-	uint32_t tofidx = tofvector.at(uint32_t(rand()%(tofvector.size())));
+//void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, TofVector& tofvector, EvtInfo& evtinfo){
+void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, EvtInfo& evtinfo){
+	//uint32_t tofidx = tofvector.at(uint32_t(rand()%(tofvector.size())));
+	
+	TofDetMap::iterator it=tofdetmap.begin();
+	uint32_t offset = uint32_t(rand()%tofdetmap.size());
+	for(int i = 0; i < offset; i++)it++;
+	uint32_t tofidx = (*it).first;
 	uint32_t detidx = tofdetmap[tofidx].at((rand()%(tofdetmap[tofidx].size())));
 	ReadOut(detmapping, tofidx, detidx, evtinfo);
 	cmap[MapIdx(tofidx, detidx)]--;
@@ -99,8 +108,9 @@ void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, Tof
 		tofdetmap[tofidx].erase(std::find(tofdetmap[tofidx].begin(), tofdetmap[tofidx].end(), detidx));
 		if(tofdetmap[tofidx].size()==0){
 			tofdetmap.erase(tofidx);
-			tofvector.erase(std::find(tofvector.begin(), tofvector.end(), tofidx));
-			std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofvector.size() << std::endl;
+			//tofvector.erase(std::find(tofvector.begin(), tofvector.end(), tofidx));
+			//std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofvector.size() << std::endl;
+			std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofdetmap.size() << std::endl;
 		}
 	}
 }
@@ -139,12 +149,12 @@ void LoadMappingFile(DetMapping& detmapping, std::string mappingfilename){
 }
 
 void PrintEvtInfo(EvtInfo& evtinfo){
- multimap<uint32_t, EvtLocation>::iterator it;
-for(it=evtinfo.begin(); it!=evtinfo.end();++it){
-EvtLocation evtlocation = (*it).second;
-cout << " Tof: " << (*it).first << " Bank: " << evtlocation[0] << " Module: " << evtlocation[1]
-<< " Xid: " << evtlocation[2] << " Yid: " << evtlocation[3] << endl;
-}
+	multimap<uint32_t, EvtLocation>::iterator it;
+	for(it=evtinfo.begin(); it!=evtinfo.end();++it){
+		EvtLocation evtlocation = (*it).second;
+		cout << " Tof: " << (*it).first << " Bank: " << evtlocation[0] << " Module: " << evtlocation[1]
+			<< " Xid: " << evtlocation[2] << " Yid: " << evtlocation[3] << endl;
+	}
 }
 
 int main(int argc, char *argv[]) {
@@ -168,25 +178,29 @@ int main(int argc, char *argv[]) {
 	LoadSimulationFile(cmap, samplefile); 
 
 	TofDetMap* tofdetmap = new TofDetMap;
-	TofVector* tofvector = new TofVector;
-	CreateTofDetMap(cmap, *tofdetmap, *tofvector);
+	//TofVector* tofvector = new TofVector;
+	//CreateTofDetMap(cmap, *tofdetmap, *tofvector);
+	CreateTofDetMap(cmap, *tofdetmap);
 
 	srand(time(NULL));
 	uint64_t hitcounts=0;
 	uint64_t pulsecounts=0;
-        EvtInfo* evtinfo = new EvtInfo;
+	EvtInfo* evtinfo = new EvtInfo;
 	while(1){
 		int hitsinpulse = rand()%20 + 10;
-                evtinfo->clear();
-	        std::cout << "Pulse: " << pulsecounts  << std::endl;
+		evtinfo->clear();
+		std::cout << "Pulse: " << pulsecounts  << std::endl;
 		for(int i=0; i< hitsinpulse; i++){
-			RandomHit(cmap, *detmapping, *tofdetmap, *tofvector, *evtinfo);
+			//RandomHit(cmap, *detmapping, *tofdetmap, *tofvector, *evtinfo);
+			RandomHit(cmap, *detmapping, *tofdetmap, *evtinfo);
 			hitcounts++;
-			if (tofvector->size() == 0)break;
+			//if (tofvector->size() == 0)break;
+			if (tofdetmap->size() == 0)break;
 		}
-                PrintEvtInfo(*evtinfo);
+		PrintEvtInfo(*evtinfo);
 		pulsecounts++;
-		if (tofvector->size() == 0)break;
+		//if (tofvector->size() == 0)break;
+		if (tofdetmap->size() == 0)break;
 	}
 
 	std::cout << "Total Events: " << hitcounts << std::endl;
