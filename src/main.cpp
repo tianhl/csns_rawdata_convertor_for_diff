@@ -57,7 +57,7 @@ void LoadSimulationFile(uint32_t* cmap, std::string samplefilename){
 			tot+=(int)(atoi(substring[detidx+1].c_str()));
 		}
 	}
-	std::cout << "total neutron hit count: " << tot << std::endl;
+	//std::cout << "total neutron hit count: " << tot << std::endl;
 	samplefile.close();
 }
 
@@ -101,7 +101,7 @@ void RandomHit(uint32_t* cmap, DetMapping& detmapping, TofDetMap& tofdetmap, Evt
 		tofdetmap[tofidx].erase(std::find(tofdetmap[tofidx].begin(), tofdetmap[tofidx].end(), detidx));
 		if(tofdetmap[tofidx].size()==0){
 			tofdetmap.erase(tofidx);
-			std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofdetmap.size() << std::endl;
+			//std::cout << "After  Remove TOF VECTOR: " << tofidx << " size " << tofdetmap.size() << std::endl;
 		}
 	}
 }
@@ -119,15 +119,17 @@ void LoadMappingFile(DetMapping& detmapping, std::string mappingfilename){
 		vector<uint32_t> det ;
 		boost::split( substring, mappingbuff, boost::is_any_of( ";" ), boost::token_compress_on );
 		for(uint32_t i=0;i<5;i++){
-			uint32_t pixelid, bankid, moduleid, xid, yid;
+			uint32_t pixelid, bankid, groupid, moduleid, xid, yid;
 			pixelid = atoi(substring[0].c_str());
 			bankid  = atoi(substring[1].c_str());
-			moduleid= atoi(substring[2].c_str());
-			xid     = atoi(substring[3].c_str());
-			yid     = atoi(substring[4].c_str());
+			groupid = atoi(substring[2].c_str());
+			moduleid= atoi(substring[3].c_str());
+			xid     = atoi(substring[4].c_str());
+			yid     = atoi(substring[5].c_str());
 
 			detmapping.insert(make_pair(pixelid, std::vector<uint32_t>()));
 			detmapping[pixelid].push_back(bankid);
+			detmapping[pixelid].push_back(groupid);
 			detmapping[pixelid].push_back(moduleid);
 			detmapping[pixelid].push_back(xid);
 			detmapping[pixelid].push_back(yid);
@@ -139,19 +141,40 @@ void LoadMappingFile(DetMapping& detmapping, std::string mappingfilename){
 
 }
 
-void PrintEvtInfo(EvtInfo& evtinfo){
+void PrintEvtInfo(uint64_t pulseid, EvtInfo& evtinfo){
 	multimap<uint32_t, EvtLocation>::iterator it;
+	multimap<uint32_t, vector<uint32_t> > readout; // Group: tof, loacation
 	for(it=evtinfo.begin(); it!=evtinfo.end();++it){
 		EvtLocation evtlocation = (*it).second;
-		cout << " Tof: " << (*it).first << " Bank: " << evtlocation[0] << " Module: " << evtlocation[1]
-			<< " Xid: " << evtlocation[2] << " Yid: " << evtlocation[3] << endl;
+                vector<uint32_t> toflocation;
+		toflocation.push_back((*it).first);
+		toflocation.push_back(evtlocation[0]);
+		toflocation.push_back(evtlocation[2]);
+		toflocation.push_back(evtlocation[3]);
+		toflocation.push_back(evtlocation[4]);
+		readout.insert(make_pair(evtlocation[1], toflocation));
+		//cout << " Tof: " << (*it).first << " Bank: " << evtlocation[0] << " Module: " << evtlocation[1]
+		//	<< " Xid: " << evtlocation[2] << " Yid: " << evtlocation[3] << endl;
 	}
+
+	std::map<uint32_t, vector<uint32_t> >::iterator its;
+	for(its=readout.begin(); its!=readout.end();its++){
+		vector<uint32_t> toflocation = (*its).second;
+		//std::cout << "  Group: " << (*its).first << " Tof: " << toflocation[0]*10
+		//	<< " Bank: " << toflocation[1] << " Module: " << toflocation[2]
+		//	<< " X: " << toflocation[3] << " Y: " << toflocation[4] << std::endl;
+		// Pulse;Group;TOF;Module;X,Y
+		std::cout << pulseid << "," << (*its).first << "," << toflocation[0]*10
+			<< "," << toflocation[2] << ","<< toflocation[3] << ","<< toflocation[4] << std::endl;
+	}
+
+
 }
 
 void PrintPulseInfo(PulseInfo& pulseinfo){
 	PulseInfo::iterator it = pulseinfo.begin();
-	std::cout << "Pulse ID: " << (*it).first << std::endl;
-	PrintEvtInfo((*it).second);
+	//std::cout << "Pulse ID: " << (*it).first << std::endl;
+	PrintEvtInfo((*it).first,(*it).second);
 }
 
 int main(int argc, char *argv[]) {
@@ -183,6 +206,7 @@ int main(int argc, char *argv[]) {
 	EvtInfo* evtinfo = new EvtInfo;
 	PulseInfo* pulseinfo = new PulseInfo;
 	while(1){
+		std::cout<< "Pulse;Group;TOF;Module;X,Y" << std::endl;
 		int hitsinpulse = rand()%20 + 10;
 		evtinfo->clear();
 		pulseinfo->clear();

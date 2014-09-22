@@ -1,2 +1,2 @@
-samplefile  = /home/tianhl/workarea/Codes/csns_rawdata_convertor_for_diff/test/data_0904/sample_left.dat
-mappingfile  = /home/tianhl/workarea/Codes/csns_rawdata_convertor_for_diff/test/data_0904/mapping_left.txt
+samplefile  = /home/tianhl/workarea/Data/CSNS_DIFF_SIM/data_0904/sample_left.dat
+mappingfile = /home/tianhl/workarea/Data/CSNS_DIFF_SIM/data_0904/newmap/mapping_left.txt
